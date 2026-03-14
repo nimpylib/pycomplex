@@ -112,7 +112,7 @@ template complex*(real, imag: HasIndex): PyComplex#[{.
   bind complex
   complex(real.index().BiggestFloat, imag.index().BiggestFloat)
 
-func complex*(s: string): PyComplex =
+func complex*(s: openArray[char]): PyComplex =
   const errMsgPre = "complex() arg is a malformed string, reason: "
   template malformedArg(msg: string) =
     raise newException(ValueError, errMsgPre & msg)
