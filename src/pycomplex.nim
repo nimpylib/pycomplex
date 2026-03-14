@@ -202,9 +202,13 @@ template pycomplex(z: SomeInteger): PyComplex = pycomplex(float(z))
 
 func abs*[T](z: PyTComplex[T]): T = abs(z.toNimComplex)  ## builtins.abs for complex
 
-func conjugate*[T](z: PyTComplex[T]): PyTComplex[T] =
-  ## complex.conjugate()
-  pycomplex conjugate(z.toNimComplex)
+template gen1(name){.dirty.} =
+  func name*[T](z: PyTComplex[T]): PyTComplex[T] =
+    pycomplex name(z.toNimComplex)
+
+gen1 conjugate
+gen1 `+`
+gen1 `-`
 
 template AsIs[T](x: T): T = x
 
