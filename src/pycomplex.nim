@@ -10,6 +10,7 @@ runnableExamples:
   # just as Python's
   assert not (type(complex(1, 2).real) is int)
 
+import std/strformat
 import std/complex as ncomplex except im, complex, pow
 export ncomplex.`/`  # XXX: NIM-BUG: or 
 #[ lib/pure/complex.nim's `func inv*[T](z: Complex[T])` will:
@@ -42,14 +43,23 @@ template borrowAttr(expAs, attr){.dirty.} =
 borrowAttr imag, im
 borrowAttr real, re
 
+func cut2str(result: var string) =
+  let lm2 = result.len - 2
+  if result[lm2+1] == '0' and result[lm2] == '.':
+    result.setLen lm2
 func cut2str[T: SomeFloat](x: T): string =
   # Nim's Complex's elements can only be of float
   result = floatdollar.`$` x
   # removesuffix('.0')
   # We know $<float> will be at least 3 chars (e.g. "0.0", "inf")
-  let lm2 = result.len - 2
-  if result[lm2+1] == '0' and result[lm2] == '.':
-    result.setLen lm2
+  result.cut2str
+
+template requirePlus(x: float): bool =
+  # act as `PyOS_double_to_string` with flag of `Py_DTSF_SIGN`
+  x >= 0 or x.isNaN
+  # NOTE: CPython's implementation does not care the sign of NaN here,
+  # unconsistent with cases in other places
+  # (CPython is used to caring a lot the sign of NaN)
 
 func repr*(z: PyTComplex): string =
   ## Returns `bj/(a+bj)`/`(a-bj)` for `complex(a, b)`
@@ -70,12 +80,6 @@ func repr*(z: PyTComplex): string =
     return
   result.add '('
   result.add real.cut2str
-  template requirePlus(x: float): bool =
-    # act as `PyOS_double_to_string` with flag of `Py_DTSF_SIGN`
-    x >= 0 or x.isNaN
-    # NOTE: CPython's implementation does not care the sign of NaN here,
-    # unconsistent with cases in other places
-    # (CPython is used to caring a lot the sign of NaN)
   if requirePlus imag:
     result.add '+'
   # if negative, `-` will be prefix-ed by `$`
@@ -83,6 +87,28 @@ func repr*(z: PyTComplex): string =
   result.add ')'
 
 func `$`*(z: PyTComplex): string = repr z
+
+proc formatValue*(res: var string, z: PyTComplex, spec: string) =
+  ## format complex with given spec, e.g. `format(complex(1, 2), ".2f")` -> "1.00+2.00j"
+  ## 
+  ## Note that Python's `format` does not support `e`/`E` for complex, but Nim's does.
+  ## So we support it as well.
+  template addImag =
+    res.formatValue z.imag, spec
+    res.cut2str
+    res.add 'j'
+
+  if z.real == 0.0 and copySign(1.0, z.real) == 1.0: # +0.0
+    addImag
+    return
+  
+  res.add '('
+  res.formatValue z.real, spec
+  res.cut2str
+  if requirePlus z.imag:
+    res.add '+'
+  addImag
+  res.add ')'
 
 template toPyComplex[T](z: ncomplex.Complex[T]): PyTComplex[T] =
   ## Convert Nim's Complex in std/complex to PyTComplex
