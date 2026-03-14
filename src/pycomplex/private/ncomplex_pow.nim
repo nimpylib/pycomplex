@@ -10,7 +10,7 @@ from pkg/float_utils/isX import isnan, isinf, isfinite
 from pkg/errno/errnoUtils import prepareRWErrno, setErrno, setErrno0, isErr, isErr0
 from pkg/errno/errnoConsts import ERANGE, EDOM
 from ./pycore_pymath import Py_ADJUST_ERANGE2
-from pkg/float_utils/aritherr import ZeroDivisionError
+from pkg/float_utils/aritherr import ZeroDivisionError, OverflowError
 
 template opt_ARM64_patch(s) =
   ##  Avoid bad optimization on Windows ARM64 until the compiler is fixed
@@ -151,7 +151,7 @@ template checkedPowBody(powImplBody) =
                         "zero to a negative or complex power");
 
     elif isErr ERANGE:
-        raise newException(OverflowDefect,
+        raise newException(aritherr.OverflowError,
                         "complex exponentiation");
 
 func pow*[T](a, b: Complex[T]): Complex[T] =
