@@ -142,6 +142,7 @@ template toPyComplex[T](z: ncomplex.Complex[T]): PyTComplex[T] =
   ## Convert Nim's Complex in std/complex to PyTComplex
   bind PyTComplex
   PyTComplex[T] z
+func complex*[T](n: ncomplex.Complex[T]): PyTComplex[T] = toPyComplex(n)
 template pycomplex*[T](z: ncomplex.Complex[T]): PyTComplex[T] =
   bind toPyComplex
   toPyComplex z
@@ -166,7 +167,7 @@ template complex*(real, imag: HasIndex): PyComplex#[{.
   bind complex
   complex(real.index().BiggestFloat, imag.index().BiggestFloat)
 
-func complex*(s: openArray[char]): PyComplex =
+func parsePyComplex*(s: openArray[char]): PyComplex =
   const errMsgPre = "complex() arg is a malformed string, reason: "
   template malformedArg(msg: string) =
     raise newException(ValueError, errMsgPre & msg)
@@ -246,6 +247,8 @@ func complex*(s: openArray[char]): PyComplex =
   if cur != n+1:
     malformedArg("superfluous chars in range " & $(cur..(n+1)))
   result = complex(re, im)
+
+func complex*(s: openArray[char]): PyComplex = parsePyComplex s
 
 template pycomplex*[T](re: T; im = T(0)): PyTComplex[T] =
   ## alias of `complex`.
