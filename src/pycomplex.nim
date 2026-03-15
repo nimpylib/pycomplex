@@ -21,6 +21,7 @@ Expression: conjugate(z) / abs2(z)
 from std/math import copySign, isNaN
 import ./pycomplex/private/ncomplex_pow
 from pkg/float_utils/parsefloat import parsePyFloat
+import pkg/float_utils/hashes
 import pkg/float_utils/stripOpenArray
 #import ../version
 import pkg/nimpatch/floatdollar
@@ -28,6 +29,33 @@ import pkg/nimpatch/floatdollar
 type
   PyTComplex*[T] = distinct Complex[T]  ## generics version of `PyComplex`_
   PyComplex* = PyTComplex[float]
+
+const PyHASH_IMAG = 1000003
+template complex_hash_impl*[T](z: T, hash_float_proc#[: proc(x: T, v: float): Hash]#): Hash =
+  ## inner. export for implementing `hash` of complex
+  ## hash of complex, same as Python's
+  ## 
+  ## Note that Python's `hash` of complex is not the same as Nim's `hash` of Complex.
+  ## So we implement it ourselves.
+  bind PyHASH_IMAG
+  let reHash = hash_float_proc(z, z.real)
+  if reHash == -1: return -1
+
+  let imHash = hash_float_proc(z, z.imag)
+  if imHash == -1: return -1
+  #[Note:  if the imaginary part is 0, hashimag is 0 now,
+  so the following returns hashreal unchanged.  This is
+  important because numbers of different types that
+  compare equal must have the same hash value, so that
+  hash(x + 0*j) must equal hash(x).]#
+  var res = reHash + PyHASH_IMAG * imHash
+  if res == -1:
+    res = -2
+  res
+
+proc hash*[T](z: PyTComplex[T]): Hash =
+  template helper(_; v: float): Hash = Py_HashDouble(v)
+  complex_hash_impl(z, helper)
 
 template toNimComplex*[T](z: PyTComplex[T]): Complex[T] = Complex[T] z
 
