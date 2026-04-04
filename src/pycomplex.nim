@@ -2,6 +2,9 @@
 ## 
 ## Use `toNimComplex` and `pycomplex` to convert between PyComplex and Complex
 
+when defined(nimPreviewSlimSystem):
+  import std/assertions
+
 runnableExamples:
   assert complex(1, 3) == complex("1.0+3.0J")
   assert complex(1, 3) == 1 + 3.J

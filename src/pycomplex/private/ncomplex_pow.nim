@@ -3,6 +3,8 @@
 ## - For integer 2nd arg, we'll use `c_powi`_ or `c_powu`,
 ##  which produce more precious result than ncomplex.pow
 ## - ncomplex.pow doesn't raise any exception
+when defined(nimPreviewSlimSystem):
+  import std/assertions
 from std/complex as ncomplex import Complex
 from std/math import copysign, hypot, pow, arctan2, exp, ln, cos, sin, floor
 template atan2(x, y): untyped = arctan2(x, y)
